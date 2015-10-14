@@ -4,7 +4,7 @@
 
 XHandler is a bridge between [net/context](https://godoc.org/golang.org/x/net/context) and `http.Handler`.
 
-It lets you enfoce `net/context` in your handlers without sacrificing compatibility with existing `http.Handlers` nor imposing a specific router.
+It lets you enforce `net/context` in your handlers without sacrificing compatibility with existing `http.Handlers` nor imposing a specific router.
 
 Thanks to `net/context` deadline management, `xhandler` is able to enforce a per request deadline and will cancel the context when the client closes the connection unexpectedly.
 
