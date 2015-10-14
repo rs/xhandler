@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/cors"
 	"github.com/rs/xhandler"
 	"golang.org/x/net/context"
 )
@@ -51,9 +52,18 @@ func main() {
 
 	// Root context
 	ctx := context.Background()
+
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
 	// Use HandleTimeout() if you want to set a per request timeout.
-	http.Handle("/", xhandler.Handle(ctx, xh))
+	// This handler is now a conventional http.Handler which can be wrapped
+	// by any other non context aware handlers.
+	var h http.Handler
+	h = xhandler.Handle(ctx, xh)
+
+	// As an example, we wrap this handler into the non context aware CORS handler
+	h = cors.Default().Handler(h)
+
+	http.Handle("/", h)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
