@@ -10,6 +10,8 @@ Thanks to `net/context` deadline management, `xhandler` is able to enforce a per
 
 You may create your own `net/context` aware middlewares pretty much the same way as you would do with http.Handler.
 
+This library is inspired by https://joeshaw.org/net-context-and-http-handler/.
+
 ## Installing
 
     go get -u github.com/rs/xhandler
