@@ -28,33 +28,26 @@ import (
 	"golang.org/x/net/context"
 )
 
-type key int
-
-const contextKey key = 0
-
-func newContext(ctx context.Context, value string) context.Context {
-	return context.WithValue(ctx, contextKey, value)
+type myMiddleware struct {
+	next xhandler.CtxHandler
 }
 
-func fromContext(ctx context.Context) (string, bool) {
-	value, ok := ctx.Value(contextKey).(string)
-	return value, ok
+func (h *myMiddleware) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	ctx = newContext(ctx, "World")
+	h.next.ServeHTTP(ctx, w, r)
 }
 
 func main() {
-	// Inner handler, reading from the context
-	xh := xhandler.CtxHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var xh xhandler.CtxHandler
+
+	// Inner handler (using handler func), reading from the context
+	xh = xhandler.CtxHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		value, _ := fromContext(ctx)
 		w.Write([]byte("Hello " + value))
 	})
 
-   // Middleware putting something in the context
-	xh = (func(next xhandler.CtxHandlerFunc) xhandler.CtxHandlerFunc {
-		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = newContext(ctx, "World")
-			next(ctx, w, r)
-		}
-	})(xh)
+	// Middleware putting something in the context
+	xh = &myMiddleware{next: xh}
 
 	// Root context
 	ctx := context.Background()
