@@ -26,16 +26,21 @@ func fromContext(ctx context.Context) (string, bool) {
 }
 
 func (h handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Leave other go routines a chance to run
+	time.Sleep(time.Nanosecond)
 	value, _ := fromContext(ctx)
 	if _, ok := ctx.Deadline(); ok {
 		value += " with deadline"
+	}
+	if ctx.Err() == context.Canceled {
+		value += " canceled"
 	}
 	w.Write([]byte(value))
 }
 
 func TestHandle(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
-	h := Handle(ctx, &handler{})
+	h := CtxHandler(ctx, &handler{})
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -45,9 +50,10 @@ func TestHandle(t *testing.T) {
 	assert.Equal(t, "value", w.Body.String())
 }
 
-func TestHandleTimeout(t *testing.T) {
+func TestTimeoutHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
-	h := HandleTimeout(ctx, time.Second, &handler{})
+	xh := TimeoutHandler(&handler{}, time.Second)
+	h := CtxHandler(ctx, xh)
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -57,9 +63,33 @@ func TestHandleTimeout(t *testing.T) {
 	assert.Equal(t, "value with deadline", w.Body.String())
 }
 
-func TestCtxHandlerFunc(t *testing.T) {
+type closeNotifyWriter struct {
+	*httptest.ResponseRecorder
+}
+
+func (w *closeNotifyWriter) CloseNotify() <-chan bool {
+	// return an already "closed" notifier
+	notify := make(chan bool, 1)
+	notify <- true
+	return notify
+}
+
+func TestCloseHandler(t *testing.T) {
+	ctx := context.WithValue(context.Background(), contextKey, "value")
+	xh := CloseHandler(&handler{})
+	h := CtxHandler(ctx, xh)
+	w := &closeNotifyWriter{httptest.NewRecorder()}
+	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	h.ServeHTTP(w, r)
+	assert.Equal(t, "value canceled", w.Body.String())
+}
+
+func TestHandlerFunc(t *testing.T) {
 	ok := false
-	xh := CtxHandlerFunc(func(context.Context, http.ResponseWriter, *http.Request) {
+	xh := HandlerFunc(func(context.Context, http.ResponseWriter, *http.Request) {
 		ok = true
 	})
 	xh.ServeHTTP(nil, nil, nil)

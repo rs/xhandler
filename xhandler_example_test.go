@@ -23,21 +23,22 @@ func fromContext(ctx context.Context) (string, bool) {
 }
 
 func ExampleHandle() {
-	xh := xhandler.CtxHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var xh xhandler.Handler
+	xh = xhandler.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		value, _ := fromContext(ctx)
 		w.Write([]byte("Hello " + value))
 	})
 
-	xh = (func(next xhandler.CtxHandlerFunc) xhandler.CtxHandlerFunc {
-		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	xh = (func(next xhandler.Handler) xhandler.Handler {
+		return xhandler.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 			ctx = newContext(ctx, "World")
-			next(ctx, w, r)
-		}
+			next.ServeHTTP(ctx, w, r)
+		})
 	})(xh)
 
 	ctx := context.Background()
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	http.Handle("/", xhandler.Handle(ctx, xh))
+	http.Handle("/", xhandler.CtxHandler(ctx, xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
@@ -45,22 +46,20 @@ func ExampleHandle() {
 }
 
 func ExampleHandleTimeout() {
-	xh := xhandler.CtxHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		value, _ := fromContext(ctx)
-		w.Write([]byte("Hello " + value))
+	var xh xhandler.Handler
+	xh = xhandler.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello World"))
+		if _, ok := ctx.Deadline(); ok {
+			w.Write([]byte(" with deadline"))
+		}
 	})
 
-	xh = (func(next xhandler.CtxHandlerFunc) xhandler.CtxHandlerFunc {
-		return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = newContext(ctx, "World")
-			next(ctx, w, r)
-		}
-	})(xh)
+	// This handler adds a timeout to the handler
+	xh = xhandler.TimeoutHandler(xh, 5*time.Second)
 
 	ctx := context.Background()
-	// Bridge context aware handlers with http.Handler using xhandler.HandleTimout()
-	// The provided timout will be set on each request's context
-	http.Handle("/", xhandler.HandleTimeout(ctx, 5*time.Second, xh))
+	// Bridge context aware handlers with http.Handler using xhandler.Handle()
+	http.Handle("/", xhandler.CtxHandler(ctx, xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)

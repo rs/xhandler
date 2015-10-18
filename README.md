@@ -32,7 +32,7 @@ import (
 )
 
 type myMiddleware struct {
-	next xhandler.CtxHandler
+	next xhandler.Handler
 }
 
 func (h *myMiddleware) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func main() {
 	var xh xhandler.CtxHandler
 
 	// Inner handler (using handler func), reading from the context
-	xh = xhandler.CtxHandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	xh = xhandler.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		value, _ := fromContext(ctx)
 		w.Write([]byte("Hello " + value))
 	})
@@ -52,15 +52,20 @@ func main() {
 	// Middleware putting something in the context
 	xh = &myMiddleware{next: xh}
 
-	// Root context
-	ctx := context.Background()
+	// Add close notifier handler so context is cancelled when the client closes
+	// the connection
+	xh = xhandler.CloseHandler(xh)
+
+	// Add timeout handler
+	xh = xhandler.TimeoutHandler(xh, 5*time.Second)
 
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	// Use HandleTimeout() if you want to set a per request timeout.
 	// This handler is now a conventional http.Handler which can be wrapped
 	// by any other non context aware handlers.
 	var h http.Handler
-	h = xhandler.Handle(ctx, xh)
+	// Root context
+	ctx := context.Background()
+	h = xhandler.CtxHandler(ctx, xh)
 
 	// As an example, we wrap this handler into the non context aware CORS handler
 	h = cors.Default().Handler(h)
