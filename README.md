@@ -16,7 +16,7 @@ This library is inspired by https://joeshaw.org/net-context-and-http-handler/.
 
     go get -u github.com/rs/xhandler
 
-## Example
+## Usage
 
 ```go
 package main
@@ -75,6 +75,27 @@ func main() {
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
 	}
+}
+```
+
+How to use it with a non- `net/context` aware router. Lets try with the Go's `ServerMux`:
+
+```go
+func main() {
+    mux := http.NewServeMux()
+    // Use xwrap to insert xhandler and all the intermediate context handlers
+    mux.Handle("/api/", xwrap(apiHandlerC{}))
+    mux.HandleFunc("/", xwrap(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+        fmt.Fprintf(w, "Welcome to the home page!")
+    }))
+}
+
+func xwrap(xh xhandler.HandlerC) http.Handler {
+    // Middleware putting something in the context
+    xh = &myMiddleware{next: xh}
+
+    ctx := context.Background()
+    return xhandler.Handler(ctx, xh)
 }
 ```
 
