@@ -65,7 +65,7 @@ func main() {
 	var h http.Handler
 	// Root context
 	ctx := context.Background()
-	h = xhandler.Handler(ctx, xh)
+	h = xhandler.New(ctx, xh)
 
 	// As an example, we wrap this handler into the non context aware CORS handler
 	h = cors.Default().Handler(h)
@@ -95,7 +95,7 @@ func xwrap(xh xhandler.HandlerC) http.Handler {
     xh = &myMiddleware{next: xh}
 
     ctx := context.Background()
-    return xhandler.Handler(ctx, xh)
+    return xhandler.New(ctx, xh)
 }
 ```
 

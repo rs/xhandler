@@ -38,7 +38,7 @@ func ExampleHandle() {
 
 	ctx := context.Background()
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	http.Handle("/", xhandler.Handler(ctx, xh))
+	http.Handle("/", xhandler.New(ctx, xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
@@ -59,7 +59,7 @@ func ExampleHandleTimeout() {
 
 	ctx := context.Background()
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	http.Handle("/", xhandler.Handler(ctx, xh))
+	http.Handle("/", xhandler.New(ctx, xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)

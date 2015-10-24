@@ -40,7 +40,7 @@ func (h handler) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.
 
 func TestHandle(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
-	h := Handler(ctx, &handler{})
+	h := New(ctx, &handler{})
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestHandle(t *testing.T) {
 func TestTimeoutHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
 	xh := TimeoutHandler(&handler{}, time.Second)
-	h := Handler(ctx, xh)
+	h := New(ctx, xh)
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -77,7 +77,7 @@ func (w *closeNotifyWriter) CloseNotify() <-chan bool {
 func TestCloseHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
 	xh := CloseHandler(&handler{})
-	h := Handler(ctx, xh)
+	h := New(ctx, xh)
 	w := &closeNotifyWriter{httptest.NewRecorder()}
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
