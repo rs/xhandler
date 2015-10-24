@@ -25,7 +25,7 @@ func fromContext(ctx context.Context) (string, bool) {
 	return value, ok
 }
 
-func (h handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h handler) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// Leave other go routines a chance to run
 	time.Sleep(time.Nanosecond)
 	value, _ := fromContext(ctx)
@@ -40,7 +40,7 @@ func (h handler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.R
 
 func TestHandle(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
-	h := CtxHandler(ctx, &handler{})
+	h := Handler(ctx, &handler{})
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestHandle(t *testing.T) {
 func TestTimeoutHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
 	xh := TimeoutHandler(&handler{}, time.Second)
-	h := CtxHandler(ctx, xh)
+	h := Handler(ctx, xh)
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -77,7 +77,7 @@ func (w *closeNotifyWriter) CloseNotify() <-chan bool {
 func TestCloseHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
 	xh := CloseHandler(&handler{})
-	h := CtxHandler(ctx, xh)
+	h := Handler(ctx, xh)
 	w := &closeNotifyWriter{httptest.NewRecorder()}
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -89,9 +89,9 @@ func TestCloseHandler(t *testing.T) {
 
 func TestHandlerFunc(t *testing.T) {
 	ok := false
-	xh := HandlerFunc(func(context.Context, http.ResponseWriter, *http.Request) {
+	xh := HandlerFuncC(func(context.Context, http.ResponseWriter, *http.Request) {
 		ok = true
 	})
-	xh.ServeHTTP(nil, nil, nil)
+	xh.ServeHTTPC(nil, nil, nil)
 	assert.True(t, ok)
 }

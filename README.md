@@ -32,19 +32,19 @@ import (
 )
 
 type myMiddleware struct {
-	next xhandler.Handler
+	next xhandler.HandlerC
 }
 
-func (h *myMiddleware) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h *myMiddleware) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	ctx = newContext(ctx, "World")
-	h.next.ServeHTTP(ctx, w, r)
+	h.next.ServeHTTPC(ctx, w, r)
 }
 
 func main() {
-	var xh xhandler.CtxHandler
+	var xh xhandler.HandlerC
 
 	// Inner handler (using handler func), reading from the context
-	xh = xhandler.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	xh = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		value, _ := fromContext(ctx)
 		w.Write([]byte("Hello " + value))
 	})
@@ -65,7 +65,7 @@ func main() {
 	var h http.Handler
 	// Root context
 	ctx := context.Background()
-	h = xhandler.CtxHandler(ctx, xh)
+	h = xhandler.Handler(ctx, xh)
 
 	// As an example, we wrap this handler into the non context aware CORS handler
 	h = cors.Default().Handler(h)

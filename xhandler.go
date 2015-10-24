@@ -18,34 +18,34 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Handler is a net/context aware http.Handler
-type Handler interface {
-	ServeHTTP(context.Context, http.ResponseWriter, *http.Request)
+// HandlerC is a net/context aware http.Handler
+type HandlerC interface {
+	ServeHTTPC(context.Context, http.ResponseWriter, *http.Request)
 }
 
-// HandlerFunc type is an adapter to allow the use of ordinary functions
+// HandlerFuncC type is an adapter to allow the use of ordinary functions
 // as a xhandler.Handler. If f is a function with the appropriate signature,
 // xhandler.HandlerFunc(f) is a xhandler.Handler object that calls f.
-type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request)
+type HandlerFuncC func(context.Context, http.ResponseWriter, *http.Request)
 
-// ServeHTTP calls f(ctx, w, r).
-func (f HandlerFunc) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+// ServeHTTPC calls f(ctx, w, r).
+func (f HandlerFuncC) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	f(ctx, w, r)
 }
 
-// CtxHandler creates a conventional http.Handler injecting the provided root
+// Handler creates a conventional http.Handler injecting the provided root
 // context to sub heandlers. This handler is used as a bridge between conventional
 // http.Handler and context aware handlers.
-func CtxHandler(ctx context.Context, h Handler) http.Handler {
+func Handler(ctx context.Context, h HandlerC) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTPC(ctx, w, r)
 	})
 }
 
 // CloseHandler returns a Handler cancelling the context when the client
 // connection close unexpectedly.
-func CloseHandler(h Handler) Handler {
-	return HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func CloseHandler(h HandlerC) HandlerC {
+	return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		// Cancel the context if the client closes the connection
 		if wcn, ok := w.(http.CloseNotifier); ok {
 			var cancel context.CancelFunc
@@ -59,7 +59,7 @@ func CloseHandler(h Handler) Handler {
 			}()
 		}
 
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTPC(ctx, w, r)
 	})
 }
 
@@ -67,9 +67,9 @@ func CloseHandler(h Handler) Handler {
 //
 // Child handlers have the responsability to obey the context deadline and to return
 // an appropriate error (or not) response in case of timeout.
-func TimeoutHandler(h Handler, timeout time.Duration) Handler {
-	return HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func TimeoutHandler(h HandlerC, timeout time.Duration) HandlerC {
+	return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		ctx, _ = context.WithTimeout(ctx, timeout)
-		h.ServeHTTP(ctx, w, r)
+		h.ServeHTTPC(ctx, w, r)
 	})
 }
