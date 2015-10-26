@@ -1,6 +1,6 @@
 # XHandler
 
-[![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/rs/xhandler) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/rs/xhandler/master/LICENSE) [![Build Status](https://travis-ci.org/rs/xhandler.svg?branch=master)](https://travis-ci.org/rs/xhandler)
+[![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/rs/xhandler) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/rs/xhandler/master/LICENSE) [![Build Status](https://travis-ci.org/rs/xhandler.svg?branch=master)](https://travis-ci.org/rs/xhandler) [![Coverage](http://gocover.io/_badge/github.com/rs/xhandler)](http://gocover.io/github.com/rs/xhandler)
 
 XHandler is a bridge between [net/context](https://godoc.org/golang.org/x/net/context) and `http.Handler`.
 
@@ -8,7 +8,7 @@ It lets you enforce `net/context` in your handlers without sacrificing compatibi
 
 Thanks to `net/context` deadline management, `xhandler` is able to enforce a per request deadline and will cancel the context when the client closes the connection unexpectedly.
 
-You may create your own `net/context` aware middlewares pretty much the same way as you would do with http.Handler.
+You may create your own `net/context` aware handler pretty much the same way as you would do with http.Handler.
 
 This library is inspired by https://joeshaw.org/net-context-and-http-handler/.
 
@@ -98,6 +98,18 @@ func xwrap(xh xhandler.HandlerC) http.Handler {
     return xhandler.New(ctx, xh)
 }
 ```
+
+## Context Aware Middleware
+
+Here is a list of `net/context` aware middleware handlers implementing `xhandler.HandlerC` interface.
+
+Feel free to put up a PR linking your middleware if you have built one:
+
+| Middleware | Author | Description |
+| ---------- | ------ | ----------- |
+| [xlog](https://github.com/rs/xlog) | [Olivier Poitrey](https://github.com/rs) | HTTP handler logger |
+| [xstats](https://github.com/rs/xstats) | [Olivier Poitrey](https://github.com/rs) | A generic client for service instrumentation |
+| [cors](https://github.com/rs/cors) | [Olivier Poitrey](https://github.com/rs) | [Cross Origin Resource Sharing](http://www.w3.org/TR/cors/) (CORS) support |
 
 ## Licenses
 
