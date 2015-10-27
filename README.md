@@ -78,6 +78,8 @@ func main() {
 }
 ```
 
+### Using existing muxers
+
 How to use it with a non- `net/context` aware router. Lets try with the Go's `ServerMux`:
 
 ```go
