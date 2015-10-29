@@ -35,42 +35,37 @@ type myMiddleware struct {
 	next xhandler.HandlerC
 }
 
-func (h *myMiddleware) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	ctx = newContext(ctx, "World")
+func (h myMiddleware) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	ctx = context.WithValue(ctx, "test", "World")
 	h.next.ServeHTTPC(ctx, w, r)
 }
 
 func main() {
-	var xh xhandler.HandlerC
-
-	// Inner handler (using handler func), reading from the context
-	xh = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		value, _ := fromContext(ctx)
-		w.Write([]byte("Hello " + value))
-	})
-
-	// Middleware putting something in the context
-	xh = &myMiddleware{next: xh}
+	c := xhandler.Chain{}
 
 	// Add close notifier handler so context is cancelled when the client closes
 	// the connection
-	xh = xhandler.CloseHandler(xh)
+	c.AppendHandlerC(xhandler.CloseHandler)
 
 	// Add timeout handler
-	xh = xhandler.TimeoutHandler(xh, 5*time.Second)
+	c.AppendHandlerC(xhandler.TimeoutHandler(2 * time.Second))
+
+	// Middleware putting something in the context
+	c.AppendHandlerC(func(next xhandler.HandlerC) xhandler.HandlerC {
+		return myMiddleware{next: next}
+	})
+
+	// Mix it with a non-context-aware middleware handler
+	c.AppendHandler(cors.Default().Handler)
+
+	// Final handler (using handlerFuncC), reading from the context
+	xh := xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		value := ctx.Value("test").(string)
+		w.Write([]byte("Hello " + value))
+	})
 
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	// This handler is now a conventional http.Handler which can be wrapped
-	// by any other non context aware handlers.
-	var h http.Handler
-	// Root context
-	ctx := context.Background()
-	h = xhandler.New(ctx, xh)
-
-	// As an example, we wrap this handler into the non context aware CORS handler
-	h = cors.Default().Handler(h)
-
-	http.Handle("/", h)
+	http.Handle("/", c.Handler(xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
@@ -84,20 +79,26 @@ How to use it with a non- `net/context` aware router. Lets try with the Go's `Se
 
 ```go
 func main() {
-    mux := http.NewServeMux()
-    // Use xwrap to insert xhandler and all the intermediate context handlers
-    mux.Handle("/api/", xwrap(apiHandlerC{}))
-    mux.HandleFunc("/", xwrap(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-        fmt.Fprintf(w, "Welcome to the home page!")
-    }))
-}
+	c := xhandler.Chain{}
 
-func xwrap(xh xhandler.HandlerC) http.Handler {
-    // Middleware putting something in the context
-    xh = &myMiddleware{next: xh}
+	// Append a context-aware middleware handler
+	c.AppendHandlerC(xhandler.CloseHandler)
 
-    ctx := context.Background()
-    return xhandler.New(ctx, xh)
+	// Mix it with a non-context-aware middleware handler
+	c.AppendHandler(cors.Default().Handler)
+
+	// Another context-aware middleware handler
+	c.AppendHandlerC(xhandler.TimeoutHandler(2 * time.Second))
+
+	mux := http.NewServeMux()
+
+	// Use c.Handler to terminate the chain with your final handler
+	mux.Handle("/", c.Handler(xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(w, "Welcome to the home page!")
+	})))
+
+	// You can reuse the same chain for other handlers
+	mux.Handle("/api", c.Handler(apiHandler))
 }
 ```
 

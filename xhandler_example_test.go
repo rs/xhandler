@@ -55,7 +55,7 @@ func ExampleHandleTimeout() {
 	})
 
 	// This handler adds a timeout to the handler
-	xh = xhandler.TimeoutHandler(xh, 5*time.Second)
+	xh = xhandler.TimeoutHandler(5 * time.Second)(xh)
 
 	ctx := context.Background()
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()

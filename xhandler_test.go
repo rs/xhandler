@@ -52,7 +52,7 @@ func TestHandle(t *testing.T) {
 
 func TestTimeoutHandler(t *testing.T) {
 	ctx := context.WithValue(context.Background(), contextKey, "value")
-	xh := TimeoutHandler(&handler{}, time.Second)
+	xh := TimeoutHandler(time.Second)(&handler{})
 	h := New(ctx, xh)
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)

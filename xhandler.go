@@ -44,7 +44,7 @@ func New(ctx context.Context, h HandlerC) http.Handler {
 
 // CloseHandler returns a Handler cancelling the context when the client
 // connection close unexpectedly.
-func CloseHandler(h HandlerC) HandlerC {
+func CloseHandler(next HandlerC) HandlerC {
 	return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		// Cancel the context if the client closes the connection
 		if wcn, ok := w.(http.CloseNotifier); ok {
@@ -59,7 +59,7 @@ func CloseHandler(h HandlerC) HandlerC {
 			}()
 		}
 
-		h.ServeHTTPC(ctx, w, r)
+		next.ServeHTTPC(ctx, w, r)
 	})
 }
 
@@ -67,9 +67,11 @@ func CloseHandler(h HandlerC) HandlerC {
 //
 // Child handlers have the responsability to obey the context deadline and to return
 // an appropriate error (or not) response in case of timeout.
-func TimeoutHandler(h HandlerC, timeout time.Duration) HandlerC {
-	return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		ctx, _ = context.WithTimeout(ctx, timeout)
-		h.ServeHTTPC(ctx, w, r)
-	})
+func TimeoutHandler(timeout time.Duration) func(next HandlerC) HandlerC {
+	return func(next HandlerC) HandlerC {
+		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			ctx, _ = context.WithTimeout(ctx, timeout)
+			next.ServeHTTPC(ctx, w, r)
+		})
+	}
 }
