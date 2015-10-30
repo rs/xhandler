@@ -13,13 +13,13 @@ import (
 func ExampleChain() {
 	c := xhandler.Chain{}
 	// Append a context-aware middleware handler
-	c.AppendHandlerC(xhandler.CloseHandler)
+	c.UseC(xhandler.CloseHandler)
 
 	// Mix it with a non-context-aware middleware handler
-	c.AppendHandler(cors.Default().Handler)
+	c.Use(cors.Default().Handler)
 
 	// Another context-aware middleware handler
-	c.AppendHandlerC(xhandler.TimeoutHandler(2 * time.Second))
+	c.UseC(xhandler.TimeoutHandler(2 * time.Second))
 
 	mux := http.NewServeMux()
 

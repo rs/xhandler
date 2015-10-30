@@ -10,14 +10,14 @@ import (
 // management.
 type Chain []func(next HandlerC) HandlerC
 
-// AppendHandlerC appends a context-aware handler to the middeware chain.
-func (c *Chain) AppendHandlerC(f func(next HandlerC) HandlerC) {
+// UseC appends a context-aware handler to the middeware chain.
+func (c *Chain) UseC(f func(next HandlerC) HandlerC) {
 	*c = append(*c, f)
 }
 
-// AppendHandler appends a standard http.Handler to the middleware chain without
+// Use appends a standard http.Handler to the middleware chain without
 // lossing track of the context when inserted between two context aware handlers.
-func (c *Chain) AppendHandler(f func(next http.Handler) http.Handler) {
+func (c *Chain) Use(f func(next http.Handler) http.Handler) {
 	xf := func(next HandlerC) HandlerC {
 		var rw http.ResponseWriter
 		var rr *http.Request

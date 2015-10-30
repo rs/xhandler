@@ -25,8 +25,8 @@ func TestAppendHanlerC(t *testing.T) {
 		})
 	}
 	c := Chain{}
-	c.AppendHandlerC(h1)
-	c.AppendHandlerC(h2)
+	c.UseC(h1)
+	c.UseC(h2)
 	assert.Len(t, c, 2)
 
 	h := c.Handler(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -57,8 +57,8 @@ func TestAppendHanler(t *testing.T) {
 		})
 	}
 	c := Chain{}
-	c.AppendHandlerC(h1)
-	c.AppendHandler(h2)
+	c.UseC(h1)
+	c.Use(h2)
 	assert.Len(t, c, 2)
 
 	h := c.Handler(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
