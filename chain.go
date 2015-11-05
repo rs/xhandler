@@ -17,18 +17,16 @@ func (c *Chain) UseC(f func(next HandlerC) HandlerC) {
 
 // Use appends a standard http.Handler to the middleware chain without
 // lossing track of the context when inserted between two context aware handlers.
+//
+// Caveat: the f function will be called on each request so you are better to put
+// any initialization sequence outside of this function.
 func (c *Chain) Use(f func(next http.Handler) http.Handler) {
 	xf := func(next HandlerC) HandlerC {
-		var rw http.ResponseWriter
-		var rr *http.Request
-		n := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rw = w
-			rr = r
-		})
-		s := f(n).ServeHTTP
 		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			s(w, r)
-			next.ServeHTTPC(ctx, rw, rr)
+			n := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				next.ServeHTTPC(ctx, w, r)
+			})
+			f(n).ServeHTTP(w, r)
 		})
 	}
 	*c = append(*c, xf)
