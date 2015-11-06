@@ -65,7 +65,7 @@ func main() {
 	})
 
 	// Bridge context aware handlers with http.Handler using xhandler.Handle()
-	http.Handle("/", c.Handler(xh))
+	http.Handle("/test", c.Handler(xh))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
