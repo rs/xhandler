@@ -43,8 +43,14 @@ func (c Chain) Handler(xh HandlerC) http.Handler {
 // HandlerCtx wraps the provided final handler with all the middleware appended to
 // the chain and return a new standard http.Handler instance.
 func (c Chain) HandlerCtx(ctx context.Context, xh HandlerC) http.Handler {
+	return New(ctx, c.HandlerC(xh))
+}
+
+// HandlerC wraps the provided final handler with all the middleware appended to
+// the chain and returns a HandlerC instance.
+func (c Chain) HandlerC(xh HandlerC) HandlerC {
 	for i := len(c) - 1; i >= 0; i-- {
 		xh = c[i](xh)
 	}
-	return New(ctx, xh)
+	return xh
 }

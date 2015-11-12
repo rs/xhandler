@@ -75,3 +75,38 @@ func TestAppendHandler(t *testing.T) {
 	// There's no safe way to not initialize non ctx aware handlers on each request :/
 	//assert.Equal(t, 1, init, "handler init called once")
 }
+
+func TestChainHandlerC(t *testing.T) {
+	handlerCalls := 0
+	h1 := func(next HandlerC) HandlerC {
+		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handlerCalls++
+			ctx = context.WithValue(ctx, "test", 1)
+			next.ServeHTTPC(ctx, w, r)
+		})
+	}
+	h2 := func(next HandlerC) HandlerC {
+		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			handlerCalls++
+			ctx = context.WithValue(ctx, "test", 2)
+			next.ServeHTTPC(ctx, w, r)
+		})
+	}
+
+	c := Chain{}
+	c.UseC(h1)
+	c.UseC(h2)
+	h := c.HandlerC(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		handlerCalls++
+
+		assert.Equal(t, 2, ctx.Value("test"),
+			"second handler should overwrite first handler's context value")
+		assert.Equal(t, 1, ctx.Value("mainCtx"),
+			"the mainCtx value should be pass through")
+	}))
+
+	mainCtx := context.WithValue(context.Background(), "mainCtx", 1)
+	h.ServeHTTPC(mainCtx, nil, nil)
+
+	assert.Equal(t, 3, handlerCalls, "all handler called once")
+}
