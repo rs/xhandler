@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestAppendHanlerC(t *testing.T) {
+func TestAppendHandlerC(t *testing.T) {
 	init := 0
 	h1 := func(next HandlerC) HandlerC {
 		init++
@@ -39,7 +39,7 @@ func TestAppendHanlerC(t *testing.T) {
 	assert.Equal(t, 1, init, "handler init called once")
 }
 
-func TestAppendHanler(t *testing.T) {
+func TestAppendHandler(t *testing.T) {
 	init := 0
 	h1 := func(next HandlerC) HandlerC {
 		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
