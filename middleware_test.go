@@ -47,3 +47,26 @@ func TestCloseHandler(t *testing.T) {
 	h.ServeHTTP(w, r)
 	assert.Equal(t, "value canceled", w.Body.String())
 }
+
+func TestIf(t *testing.T) {
+	trueHandler := HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/true", r.URL.Path)
+	})
+	falseHandler := HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		assert.NotEqual(t, "/true", r.URL.Path)
+	})
+	ctx := context.WithValue(context.Background(), contextKey, "value")
+	xh := If(
+		func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+			return r.URL.Path == "/true"
+		},
+		func(next HandlerC) HandlerC {
+			return trueHandler
+		},
+	)(falseHandler)
+	h := New(ctx, xh)
+	r, _ := http.NewRequest("GET", "http://example.com/true", nil)
+	h.ServeHTTP(nil, r)
+	r, _ = http.NewRequest("GET", "http://example.com/false", nil)
+	h.ServeHTTP(nil, r)
+}

@@ -40,3 +40,17 @@ func TimeoutHandler(timeout time.Duration) func(next HandlerC) HandlerC {
 		})
 	}
 }
+
+// If is a special handler that will skip insert the condNext handler only if a condition
+// applies at runtime.
+func If(cond func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool, condNext func(next HandlerC) HandlerC) func(next HandlerC) HandlerC {
+	return func(next HandlerC) HandlerC {
+		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			if cond(ctx, w, r) {
+				condNext(next).ServeHTTPC(ctx, w, r)
+			} else {
+				next.ServeHTTPC(ctx, w, r)
+			}
+		})
+	}
+}
