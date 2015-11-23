@@ -24,6 +24,28 @@ func TestTimeoutHandler(t *testing.T) {
 	assert.Equal(t, "value with deadline", w.Body.String())
 }
 
+func TestBasicAuthHandler(t *testing.T) {
+	ctx := context.Background()
+	xh := BasicAuthHandler("user", "pass")(&handler{})
+	h := New(ctx, xh)
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	h.ServeHTTP(w, r)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	w = httptest.NewRecorder()
+	r, err = http.NewRequest("GET", "http://example.com/foo", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	r.SetBasicAuth("user", "pass")
+	h.ServeHTTP(w, r)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 type closeNotifyWriter struct {
 	*httptest.ResponseRecorder
 }

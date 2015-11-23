@@ -41,6 +41,22 @@ func TimeoutHandler(timeout time.Duration) func(next HandlerC) HandlerC {
 	}
 }
 
+// BasicAuthHandler returns a handler which errors out with
+// http.StatusForbidden if the correct credentials were not provided in the
+// request.
+func BasicAuthHandler(user, pass string) func(next HandlerC) HandlerC {
+	return func(next HandlerC) HandlerC {
+		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			if usr, pw, ok := r.BasicAuth(); !ok || usr != user || pw != pass {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTPC(ctx, w, r)
+		})
+	}
+}
+
 // If is a special handler that will skip insert the condNext handler only if a condition
 // applies at runtime.
 func If(cond func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool, condNext func(next HandlerC) HandlerC) func(next HandlerC) HandlerC {
