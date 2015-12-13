@@ -18,6 +18,8 @@ The muxer is optimized for high performance and a small memory footprint. It sca
 
 **Parameters in your routing pattern:** Stop parsing the requested URL path, just give the path segment a name and the router delivers the dynamic value to you. Because of the design of the router, path parameters are very cheap.
 
+**RouteGroups:** A way to create [groups of routes](http://godoc.org/github.com/rs/xhandler/xmux#Mux.NewGroup) without incurring any per-request overhead.
+
 **Zero Garbage:** The matching and dispatching process generates zero bytes of garbage. In fact, the only heap allocations that are made, is by building the slice of the key-value pairs for path parameters and the `net/context` instance to store them in the context. If the request path contains no parameters, not a single heap allocation is necessary.
 
 **No more server crashes:** You can set a [Panic handler](http://godoc.org/github.com/rs/xhandler/xmux#Mux.PanicHandler) to deal with panics occurring during handling a HTTP request. The router then recovers and lets the `PanicHandler` log what happened and deliver a nice error page.

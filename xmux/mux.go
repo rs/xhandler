@@ -176,6 +176,12 @@ func New() *Mux {
 	}
 }
 
+// NewGroup creates a new routes group with the provided path prefix.
+// All routes added to the returned group will have the path prepended.
+func (mux *Mux) NewGroup(path string) *Group {
+	return newRouteGroup(mux, path)
+}
+
 // GET is a shortcut for mux.Handle("GET", path, handler)
 func (mux *Mux) GET(path string, handler xhandler.HandlerC) {
 	mux.Handle("GET", path, handler)
