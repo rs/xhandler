@@ -66,7 +66,7 @@ func TestMux(t *testing.T) {
 	mux := New()
 
 	routed := false
-	mux.Handle("GET", "/user/:name", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.HandleC("GET", "/user/:name", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		routed = true
 		assert.Equal(t, ParamHolder{params: []param{{"name", "gopher"}}}, Params(ctx))
 	}))
@@ -303,7 +303,7 @@ func TestMuxPanicHandler(t *testing.T) {
 		panicHandled = true
 	}
 
-	mux.Handle("PUT", "/user/:name", xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
+	mux.HandleC("PUT", "/user/:name", xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
 		panic("oops!")
 	}))
 

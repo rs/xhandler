@@ -32,14 +32,14 @@ func loadXhandler(routes []route) xhandler.HandlerC {
 	h := namedHandler{}
 	mux := New()
 	for _, route := range routes {
-		mux.Handle(route.method, route.path, h)
+		mux.HandleC(route.method, route.path, h)
 	}
 	return mux
 }
 
 func loadXhandlerSingle(method, path string, h xhandler.HandlerC) xhandler.HandlerC {
 	mux := New()
-	mux.Handle(method, path, h)
+	mux.HandleC(method, path, h)
 	return mux
 }
 
