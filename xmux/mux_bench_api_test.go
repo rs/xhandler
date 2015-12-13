@@ -1,10 +1,12 @@
 // Forked from https://github.com/julienschmidt/go-http-routing-benchmark
 //
-package xhandler
+package xmux
 
 import (
 	"net/http"
 	"testing"
+
+	"github.com/rs/xhandler"
 
 	"golang.org/x/net/context"
 )
@@ -56,13 +58,13 @@ var parseAPI = []route{
 }
 
 var (
-	parseXhandler   HandlerC
-	parseChi        HandlerC
+	parseXhandler   xhandler.HandlerC
+	parseChi        xhandler.HandlerC
 	parseGoji       http.Handler
 	parseHTTPRouter http.Handler
 )
 
-func getParseXhandler(b *testing.B) HandlerC {
+func getParseXhandler(b *testing.B) xhandler.HandlerC {
 	defer b.ResetTimer()
 	if parseXhandler == nil {
 		parseXhandler = loadXhandler(parseAPI)
@@ -70,7 +72,7 @@ func getParseXhandler(b *testing.B) HandlerC {
 	return parseXhandler
 }
 
-func getParseChi(b *testing.B) HandlerC {
+func getParseChi(b *testing.B) xhandler.HandlerC {
 	defer b.ResetTimer()
 	if parseChi == nil {
 		parseChi = loadChi(parseAPI)

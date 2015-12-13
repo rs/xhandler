@@ -4,7 +4,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-package xhandler
+package xmux
 
 import (
 	"fmt"
@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/rs/xhandler"
 
 	"golang.org/x/net/context"
 )
@@ -32,7 +34,7 @@ type namedHandler struct {
 
 func (n namedHandler) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {}
 
-func fakeHandler(name string) HandlerC {
+func fakeHandler(name string) xhandler.HandlerC {
 	return namedHandler{name: name}
 }
 

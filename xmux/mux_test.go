@@ -1,4 +1,4 @@
-package xhandler
+package xmux
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/rs/xhandler"
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/net/context"
@@ -73,10 +74,10 @@ func TestURLParams(t *testing.T) {
 }
 
 func TestMux(t *testing.T) {
-	mux := NewMux()
+	mux := New()
 
 	routed := false
-	mux.Handle("GET", "/user/:name", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET", "/user/:name", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		routed = true
 		assert.Equal(t, Params{params: []struct {
 			key   string
@@ -103,26 +104,26 @@ func (h handlerStruct) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r 
 func TestMuxAPI(t *testing.T) {
 	var get, head, options, post, put, patch, delete bool
 
-	mux := NewMux()
-	mux.GET("/GET", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux := New()
+	mux.GET("/GET", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		get = true
 	}))
-	mux.HEAD("/GET", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.HEAD("/GET", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		head = true
 	}))
-	mux.OPTIONS("/GET", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.OPTIONS("/GET", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		options = true
 	}))
-	mux.POST("/POST", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.POST("/POST", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		post = true
 	}))
-	mux.PUT("/PUT", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.PUT("/PUT", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		put = true
 	}))
-	mux.PATCH("/PATCH", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.PATCH("/PATCH", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		patch = true
 	}))
-	mux.DELETE("/DELETE", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.DELETE("/DELETE", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		delete = true
 	}))
 
@@ -158,7 +159,7 @@ func TestMuxAPI(t *testing.T) {
 }
 
 func TestMuxRoot(t *testing.T) {
-	mux := NewMux()
+	mux := New()
 	recv := catchPanic(func() {
 		mux.GET("noSlashRoot", nil)
 	})
@@ -166,18 +167,18 @@ func TestMuxRoot(t *testing.T) {
 }
 
 func TestMuxChaining(t *testing.T) {
-	mux1 := NewMux()
-	mux2 := NewMux()
+	mux1 := New()
+	mux2 := New()
 	mux1.NotFound = mux2
 
 	fooHit := false
-	mux1.POST("/foo", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	mux1.POST("/foo", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		fooHit = true
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	barHit := false
-	mux2.POST("/bar", HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	mux2.POST("/bar", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		barHit = true
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -208,9 +209,9 @@ func TestMuxChaining(t *testing.T) {
 }
 
 func TestMuxNotAllowed(t *testing.T) {
-	handlerFunc := HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {})
+	handlerFunc := xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {})
 
-	mux := NewMux()
+	mux := New()
 	mux.POST("/path", handlerFunc)
 
 	// Test not allowed
@@ -221,7 +222,7 @@ func TestMuxNotAllowed(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	responseText := "custom method"
-	mux.MethodNotAllowed = HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	mux.MethodNotAllowed = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 		w.Write([]byte(responseText))
 	})
@@ -231,9 +232,9 @@ func TestMuxNotAllowed(t *testing.T) {
 }
 
 func TestMuxNotFound(t *testing.T) {
-	handlerFunc := HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {})
+	handlerFunc := xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {})
 
-	mux := NewMux()
+	mux := New()
 	mux.GET("/path", handlerFunc)
 	mux.GET("/dir/", handlerFunc)
 	mux.GET("/", handlerFunc)
@@ -264,7 +265,7 @@ func TestMuxNotFound(t *testing.T) {
 
 	// Test custom not found handler
 	var notFound bool
-	mux.NotFound = HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	mux.NotFound = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		notFound = true
 	})
@@ -285,7 +286,7 @@ func TestMuxNotFound(t *testing.T) {
 	}
 
 	// Test special case where no node for the prefix "/" exists
-	mux = NewMux()
+	mux = New()
 	mux.GET("/a", handlerFunc)
 	r, _ = http.NewRequest("GET", "/", nil)
 	w = httptest.NewRecorder()
@@ -294,14 +295,14 @@ func TestMuxNotFound(t *testing.T) {
 }
 
 func TestMuxPanicHandler(t *testing.T) {
-	mux := NewMux()
+	mux := New()
 	panicHandled := false
 
 	mux.PanicHandler = func(ctx context.Context, w http.ResponseWriter, r *http.Request, p interface{}) {
 		panicHandled = true
 	}
 
-	mux.Handle("PUT", "/user/:name", HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
+	mux.Handle("PUT", "/user/:name", xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
 		panic("oops!")
 	}))
 
@@ -321,11 +322,11 @@ func TestMuxPanicHandler(t *testing.T) {
 
 func TestMuxLookup(t *testing.T) {
 	routed := false
-	wantHandler := HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
+	wantHandler := xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {
 		routed = true
 	})
 
-	mux := NewMux()
+	mux := New()
 
 	// try empty router first
 	handler, _, tsr := mux.Lookup("GET", "/nope")

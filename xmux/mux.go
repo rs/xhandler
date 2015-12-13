@@ -1,13 +1,35 @@
-package xhandler
-
-import (
-	"net/http"
-
-	"golang.org/x/net/context"
-)
-
-// Mux is a xhandler.HandlerC which can be used to dispatch requests to different
-// handler functions via configurable routes
+// Package xmux is a net/context aware, tree based high performance HTTP request
+// multiplexer forked from httprouter.
+//
+// A trivial example is:
+//
+//  package main
+//
+//  import (
+//      "fmt"
+//      "net/http"
+//      "log"
+//
+//      "github.com/rs/xhandler"
+//      "github.com/rs/xhandler/xmux"
+//      "golang.org/x/net/context"
+//  )
+//
+//  func Index(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+//      fmt.Fprint(w, "Welcome!\n")
+//  }
+//
+//  func Hello(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+//      fmt.Fprintf(w, "hello, %s!\n", xmux.URLParams(ctx).Get("name"))
+//  }
+//
+//  func main() {
+//      mux := xmux.New()
+//      mux.GET("/", Index)
+//      mux.GET("/hello/:name", Hello)
+//
+//      log.Fatal(http.ListenAndServe(":8080", xhandler.New(context.Background(), mux)))
+//  }
 //
 // The muxer matches incoming requests by the request method and the path.
 // If a handle is registered for this path and method, the router delegates the
@@ -45,6 +67,18 @@ import (
 // The value of parameters is saved as aParams type saved into the context.
 // Parameters can be retrieved by name using xhandler.URLParams(ctx).Get(name) method:
 //  user := xhandler.URLParams(ctx).Get("user") // defined by :user or *user
+package xmux
+
+import (
+	"net/http"
+
+	"github.com/rs/xhandler"
+
+	"golang.org/x/net/context"
+)
+
+// Mux is a xhandler.HandlerC which can be used to dispatch requests to different
+// handler functions via configurable routes
 type Mux struct {
 	trees map[string]*node
 
@@ -76,12 +110,12 @@ type Mux struct {
 
 	// Configurable http.Handler which is called when no matching route is
 	// found. If it is not set, http.Error with http.StatusNotFound is used.
-	NotFound HandlerC
+	NotFound xhandler.HandlerC
 
 	// Configurable http.Handler which is called when a request
 	// cannot be routed and HandleMethodNotAllowed is true.
 	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
-	MethodNotAllowed HandlerC
+	MethodNotAllowed xhandler.HandlerC
 
 	// Function to handle panics recovered from http handlers.
 	// It should be used to generate a error page and return the http error code
@@ -131,8 +165,8 @@ func URLParams(ctx context.Context) Params {
 	return emptyParams
 }
 
-// NewMux returns a new muxer instance
-func NewMux() *Mux {
+// New returns a new muxer instance
+func New() *Mux {
 	return &Mux{
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
@@ -141,37 +175,37 @@ func NewMux() *Mux {
 }
 
 // GET is a shortcut for mux.Handle("GET", path, handler)
-func (mux *Mux) GET(path string, handler HandlerC) {
+func (mux *Mux) GET(path string, handler xhandler.HandlerC) {
 	mux.Handle("GET", path, handler)
 }
 
 // HEAD is a shortcut for mux.Handle("HEAD", path, handler)
-func (mux *Mux) HEAD(path string, handler HandlerC) {
+func (mux *Mux) HEAD(path string, handler xhandler.HandlerC) {
 	mux.Handle("HEAD", path, handler)
 }
 
 // OPTIONS is a shortcut for mux.Handle("OPTIONS", path, handler)
-func (mux *Mux) OPTIONS(path string, handler HandlerC) {
+func (mux *Mux) OPTIONS(path string, handler xhandler.HandlerC) {
 	mux.Handle("OPTIONS", path, handler)
 }
 
 // POST is a shortcut for mux.Handle("POST", path, handler)
-func (mux *Mux) POST(path string, handler HandlerC) {
+func (mux *Mux) POST(path string, handler xhandler.HandlerC) {
 	mux.Handle("POST", path, handler)
 }
 
 // PUT is a shortcut for mux.Handle("PUT", path, handler)
-func (mux *Mux) PUT(path string, handler HandlerC) {
+func (mux *Mux) PUT(path string, handler xhandler.HandlerC) {
 	mux.Handle("PUT", path, handler)
 }
 
 // PATCH is a shortcut for mux.Handle("PATCH", path, handler)
-func (mux *Mux) PATCH(path string, handler HandlerC) {
+func (mux *Mux) PATCH(path string, handler xhandler.HandlerC) {
 	mux.Handle("PATCH", path, handler)
 }
 
 // DELETE is a shortcut for mux.Handle("DELETE", path, handler)
-func (mux *Mux) DELETE(path string, handler HandlerC) {
+func (mux *Mux) DELETE(path string, handler xhandler.HandlerC) {
 	mux.Handle("DELETE", path, handler)
 }
 
@@ -183,7 +217,7 @@ func (mux *Mux) DELETE(path string, handler HandlerC) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (mux *Mux) Handle(method, path string, handler HandlerC) {
+func (mux *Mux) Handle(method, path string, handler xhandler.HandlerC) {
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
@@ -212,7 +246,7 @@ func (mux *Mux) recv(ctx context.Context, w http.ResponseWriter, r *http.Request
 // If the path was found, it returns the handle function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (mux *Mux) Lookup(method, path string) (HandlerC, Params, bool) {
+func (mux *Mux) Lookup(method, path string) (xhandler.HandlerC, Params, bool) {
 	if root := mux.trees[method]; root != nil {
 		return root.getValue(path)
 	}

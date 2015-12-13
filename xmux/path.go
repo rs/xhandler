@@ -5,7 +5,7 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the LICENSE file.
 
-package xhandler
+package xmux
 
 // CleanPath is the URL version of path.Clean, it returns a canonical URL path
 // for p, eliminating . and .. elements.

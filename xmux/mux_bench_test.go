@@ -1,6 +1,6 @@
 // Forked from https://github.com/julienschmidt/go-http-routing-benchmark
 //
-package xhandler
+package xmux
 
 import (
 	"io"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pressly/chi"
+	"github.com/rs/xhandler"
 	goji "github.com/zenazn/goji/web"
 	"golang.org/x/net/context"
 )
@@ -21,28 +22,28 @@ type route struct {
 	path   string
 }
 
-var httpHandlerC = HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {})
+var httpHandlerC = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {})
 
-var xhandlerWrite = HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+var xhandlerWrite = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, URLParams(ctx).Get("name"))
 })
 
-func loadXhandler(routes []route) HandlerC {
+func loadXhandler(routes []route) xhandler.HandlerC {
 	h := namedHandler{}
-	mux := NewMux()
+	mux := New()
 	for _, route := range routes {
 		mux.Handle(route.method, route.path, h)
 	}
 	return mux
 }
 
-func loadXhandlerSingle(method, path string, h HandlerC) HandlerC {
-	mux := NewMux()
+func loadXhandlerSingle(method, path string, h xhandler.HandlerC) xhandler.HandlerC {
+	mux := New()
 	mux.Handle(method, path, h)
 	return mux
 }
 
-func loadChi(routes []route) HandlerC {
+func loadChi(routes []route) xhandler.HandlerC {
 	h := namedHandler{}
 	router := chi.NewRouter()
 	for _, route := range routes {
@@ -64,7 +65,7 @@ func loadChi(routes []route) HandlerC {
 	return router
 }
 
-func loadChiSingle(method, path string, h HandlerC) HandlerC {
+func loadChiSingle(method, path string, h xhandler.HandlerC) xhandler.HandlerC {
 	router := chi.NewRouter()
 	switch method {
 	case "GET":
@@ -168,7 +169,7 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	}
 }
 
-func benchRequestC(b *testing.B, router HandlerC, ctx context.Context, r *http.Request) {
+func benchRequestC(b *testing.B, router xhandler.HandlerC, ctx context.Context, r *http.Request) {
 	w := new(mockResponseWriter)
 	u := r.URL
 	rq := u.RawQuery
@@ -203,7 +204,7 @@ func benchRoutes(b *testing.B, router http.Handler, routes []route) {
 	}
 }
 
-func benchRoutesC(b *testing.B, router HandlerC, ctx context.Context, routes []route) {
+func benchRoutesC(b *testing.B, router xhandler.HandlerC, ctx context.Context, routes []route) {
 	w := new(mockResponseWriter)
 	r, _ := http.NewRequest("GET", "/", nil)
 	u := r.URL

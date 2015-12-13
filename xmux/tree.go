@@ -4,11 +4,13 @@
 // Use of this source code is governed by a BSD-style license that can be found
 // in the https://github.com/julienschmidt/httprouter/blob/master/LICENSE file.
 
-package xhandler
+package xmux
 
 import (
 	"strings"
 	"unicode"
+
+	"github.com/rs/xhandler"
 )
 
 func min(a, b int) int {
@@ -48,7 +50,7 @@ type node struct {
 	maxParams uint8
 	indices   string
 	children  []*node
-	handler   HandlerC
+	handler   xhandler.HandlerC
 	priority  uint32
 }
 
@@ -80,7 +82,7 @@ func (n *node) incrementChildPrio(pos int) int {
 
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
-func (n *node) addRoute(path string, handler HandlerC) {
+func (n *node) addRoute(path string, handler xhandler.HandlerC) {
 	fullPath := path
 	n.priority++
 	numParams := countParams(path)
@@ -202,7 +204,7 @@ func (n *node) addRoute(path string, handler HandlerC) {
 	}
 }
 
-func (n *node) insertChild(numParams uint8, path, fullPath string, handler HandlerC) {
+func (n *node) insertChild(numParams uint8, path, fullPath string, handler xhandler.HandlerC) {
 	var offset int // already handled bytes of the path
 
 	// find prefix until first wildcard (beginning with ':'' or '*'')
@@ -320,7 +322,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handler Handl
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handler exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string) (handler HandlerC, p Params, tsr bool) {
+func (n *node) getValue(path string) (handler xhandler.HandlerC, p Params, tsr bool) {
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {

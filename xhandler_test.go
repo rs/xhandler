@@ -13,6 +13,8 @@ import (
 
 type handler struct{}
 
+type key int
+
 const contextKey key = 0
 
 func newContext(ctx context.Context, value string) context.Context {
