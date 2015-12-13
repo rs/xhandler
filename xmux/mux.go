@@ -185,40 +185,41 @@ func (mux *Mux) NewGroup(path string) *Group {
 
 // GET is a shortcut for mux.Handle("GET", path, handler)
 func (mux *Mux) GET(path string, handler xhandler.HandlerC) {
-	mux.Handle("GET", path, handler)
+	mux.HandleC("GET", path, handler)
 }
 
 // HEAD is a shortcut for mux.Handle("HEAD", path, handler)
 func (mux *Mux) HEAD(path string, handler xhandler.HandlerC) {
-	mux.Handle("HEAD", path, handler)
+	mux.HandleC("HEAD", path, handler)
 }
 
 // OPTIONS is a shortcut for mux.Handle("OPTIONS", path, handler)
 func (mux *Mux) OPTIONS(path string, handler xhandler.HandlerC) {
-	mux.Handle("OPTIONS", path, handler)
+	mux.HandleC("OPTIONS", path, handler)
 }
 
 // POST is a shortcut for mux.Handle("POST", path, handler)
 func (mux *Mux) POST(path string, handler xhandler.HandlerC) {
-	mux.Handle("POST", path, handler)
+	mux.HandleC("POST", path, handler)
 }
 
 // PUT is a shortcut for mux.Handle("PUT", path, handler)
 func (mux *Mux) PUT(path string, handler xhandler.HandlerC) {
-	mux.Handle("PUT", path, handler)
+	mux.HandleC("PUT", path, handler)
 }
 
 // PATCH is a shortcut for mux.Handle("PATCH", path, handler)
 func (mux *Mux) PATCH(path string, handler xhandler.HandlerC) {
-	mux.Handle("PATCH", path, handler)
+	mux.HandleC("PATCH", path, handler)
 }
 
 // DELETE is a shortcut for mux.Handle("DELETE", path, handler)
 func (mux *Mux) DELETE(path string, handler xhandler.HandlerC) {
-	mux.Handle("DELETE", path, handler)
+	mux.HandleC("DELETE", path, handler)
 }
 
-// Handle registers a new request handle with the given path and method.
+// HandleC registers a net/context aware request handler with the given
+// path and method.
 //
 // For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
 // functions can be used.
@@ -226,7 +227,7 @@ func (mux *Mux) DELETE(path string, handler xhandler.HandlerC) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (mux *Mux) Handle(method, path string, handler xhandler.HandlerC) {
+func (mux *Mux) HandleC(method, path string, handler xhandler.HandlerC) {
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
@@ -242,6 +243,28 @@ func (mux *Mux) Handle(method, path string, handler xhandler.HandlerC) {
 	}
 
 	root.addRoute(path, handler)
+}
+
+// Handle regiester a standard http.Handler request handler with the given
+// path and method. With this adapter, your handler won't have access to the
+// context and thus won't work with URL parameters.
+func (mux *Mux) Handle(method, path string, handler http.Handler) {
+	mux.HandleC(method, path,
+		xhandler.HandlerFuncC(func(_ context.Context, w http.ResponseWriter, r *http.Request) {
+			handler.ServeHTTP(w, r)
+		}),
+	)
+}
+
+// HandleFunc regiester a standard http.HandlerFunc request handler with the given
+// path and method. With this adapter, your handler won't have access to the
+// context and thus won't work with URL parameters.
+func (mux *Mux) HandleFunc(method, path string, handler http.HandlerFunc) {
+	mux.HandleC(method, path,
+		xhandler.HandlerFuncC(func(_ context.Context, w http.ResponseWriter, r *http.Request) {
+			handler(w, r)
+		}),
+	)
 }
 
 func (mux *Mux) recv(ctx context.Context, w http.ResponseWriter, r *http.Request) {
