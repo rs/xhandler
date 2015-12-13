@@ -72,11 +72,31 @@ func TestMux(t *testing.T) {
 	}))
 
 	w := new(mockResponseWriter)
-
 	r, _ := http.NewRequest("GET", "/user/gopher", nil)
 	mux.ServeHTTPC(context.Background(), w, r)
-
 	assert.True(t, routed, "routing failed")
+}
+
+func TestMuxAdaptors(t *testing.T) {
+	mux := New()
+
+	var handle, handleFunc bool
+	mux.Handle("GET", "/handle", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handle = true
+	}))
+	mux.HandleFunc("GET", "/handleFunc", func(w http.ResponseWriter, r *http.Request) {
+		handleFunc = true
+	})
+
+	w := new(mockResponseWriter)
+	r, _ := http.NewRequest("GET", "/handle", nil)
+	mux.ServeHTTPC(context.Background(), w, r)
+	assert.True(t, handle, "routing failed")
+
+	w = new(mockResponseWriter)
+	r, _ = http.NewRequest("GET", "/handleFunc", nil)
+	mux.ServeHTTPC(context.Background(), w, r)
+	assert.True(t, handleFunc, "routing failed")
 }
 
 type handlerStruct struct {

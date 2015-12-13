@@ -50,6 +50,29 @@ func TestRouteNewGroupError(t *testing.T) {
 	})
 }
 
+func TestGroupAdaptors(t *testing.T) {
+	mux := New()
+	foo := mux.NewGroup("/foo")
+
+	var handle, handleFunc bool
+	foo.Handle("GET", "/handle", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handle = true
+	}))
+	foo.HandleFunc("GET", "/handleFunc", func(w http.ResponseWriter, r *http.Request) {
+		handleFunc = true
+	})
+
+	w := new(mockResponseWriter)
+	r, _ := http.NewRequest("GET", "/foo/handle", nil)
+	mux.ServeHTTPC(context.Background(), w, r)
+	assert.True(t, handle, "routing failed")
+
+	w = new(mockResponseWriter)
+	r, _ = http.NewRequest("GET", "/foo/handleFunc", nil)
+	mux.ServeHTTPC(context.Background(), w, r)
+	assert.True(t, handleFunc, "routing failed")
+}
+
 func TestRouteGroupAPI(t *testing.T) {
 	var get, head, options, post, put, patch, delete bool
 
