@@ -177,6 +177,54 @@ BenchmarkHTTPRouter_ParamWrite-8	10000000	       166 ns/op	      32 B/op	       
 
 You can run this benchmark by using `go test -bench=.` in `xmux`'s root.
 
+## How does it work?
+
+The muxer relies on a tree structure which makes heavy use of *common prefixes*, it is basically a *compact* [*prefix tree*](http://en.wikipedia.org/wiki/Trie) (or just [*Radix tree*](http://en.wikipedia.org/wiki/Radix_tree)). Nodes with a common prefix also share a common parent. Here is a short example what the routing tree for the `GET` request method could look like:
+
+```
+Priority   Path             Handle
+9          \                *<1>
+3          ├s               nil
+2          |├earch\         *<2>
+1          |└upport\        *<3>
+2          ├blog\           *<4>
+1          |    └:post      nil
+1          |         └\     *<5>
+2          ├about-us\       *<6>
+1          |        └team\  *<7>
+1          └contact\        *<8>
+```
+
+Every `*<num>` represents the memory address of a handler function (a pointer). If you follow a path trough the tree from the root to the leaf, you get the complete route path, e.g `\blog\:post\`, where `:post` is just a placeholder ([*parameter*](#named-parameters)) for an actual post name. Unlike hash-maps, a tree structure also allows us to use dynamic parts like the `:post` parameter, since we actually match against the routing patterns instead of just comparing hashes. [As benchmarks show](https://github.com/julienschmidt/go-http-routing-benchmark), this works very well and efficient.
+
+Since URL paths have a hierarchical structure and make use only of a limited set of characters (byte values), it is very likely that there are a lot of common prefixes. This allows us to easily reduce the routing into ever smaller problems. Moreover the router manages a separate tree for every request method. For one thing it is more space efficient than holding a method->handle map in every single node, for another thing is also allows us to greatly reduce the routing problem before even starting the look-up in the prefix-tree.
+
+For even better scalability, the child nodes on each tree level are ordered by priority, where the priority is just the number of handles registered in sub nodes (children, grandchildren, and so on..). This helps in two ways:
+
+1. Nodes which are part of the most routing paths are evaluated first. This helps to make as much routes as possible to be reachable as fast as possible.
+2. It is some sort of cost compensation. The longest reachable path (highest cost) can always be evaluated first. The following scheme visualizes the tree structure. Nodes are evaluated from top to bottom and from left to right.
+
+```
+├------------
+├---------
+├-----
+├----
+├--
+├--
+└-
+```
+
+
+## Why doesn't this work with http.Handler?
+**It does!** The router itself implements the http.Handler interface.
+Moreover the router provides convenient [adapters for http.Handler](http://godoc.org/github.com/julienschmidt/httprouter#Router.Handler)s and [http.HandlerFunc](http://godoc.org/github.com/julienschmidt/httprouter#Router.HandlerFunc)s
+which allows them to be used as a [httprouter.Handle](http://godoc.org/github.com/julienschmidt/httprouter#Router.Handle) when registering a route.
+The only disadvantage is, that no parameter values can be retrieved when a
+http.Handler or http.HandlerFunc is used, since there is no efficient way to
+pass the values with the existing function parameters.
+Therefore [httprouter.Handle](http://godoc.org/github.com/julienschmidt/httprouter#Router.Handle) has a third function parameter.
+
+Just try it out for yourself, the usage of HttpRouter is very straightforward. The package is compact and minimalistic, but also probably one of the easiest routers to set up.
 
 ## Licenses
 
