@@ -71,6 +71,7 @@ package xmux
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rs/xhandler"
 
@@ -311,24 +312,29 @@ func (mux *Mux) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.R
 
 	// Handle 405
 	if mux.HandleMethodNotAllowed {
+		methods := []string{}
 		for method := range mux.trees {
 			// Skip the requested method - we already tried this one
 			if method == r.Method {
 				continue
 			}
 
-			handle, _, _ := mux.trees[method].getValue(r.URL.Path)
-			if handle != nil {
-				if mux.MethodNotAllowed != nil {
-					mux.MethodNotAllowed.ServeHTTPC(ctx, w, r)
-				} else {
-					http.Error(w,
-						http.StatusText(http.StatusMethodNotAllowed),
-						http.StatusMethodNotAllowed,
-					)
-				}
-				return
+			handler, _, _ := mux.trees[method].getValue(r.URL.Path)
+			if handler != nil {
+				methods = append(methods, method)
 			}
+		}
+		if len(methods) > 0 && methods[0] != "OPTIONS" {
+			w.Header().Set("Allow", strings.Join(methods, ", "))
+			if mux.MethodNotAllowed != nil {
+				mux.MethodNotAllowed.ServeHTTPC(ctx, w, r)
+			} else {
+				http.Error(w,
+					http.StatusText(http.StatusMethodNotAllowed),
+					http.StatusMethodNotAllowed,
+				)
+			}
+			return
 		}
 	}
 

@@ -199,12 +199,14 @@ func TestMuxNotAllowed(t *testing.T) {
 
 	mux := New()
 	mux.POST("/path", handlerFunc)
+	mux.PUT("/path", handlerFunc)
 
 	// Test not allowed
 	r, _ := http.NewRequest("GET", "/path", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTPC(context.Background(), w, r)
 	assert.Equal(t, w.Code, http.StatusMethodNotAllowed, "NotAllowed handling failed")
+	assert.Equal(t, "POST, PUT", w.HeaderMap.Get("Allow"))
 
 	w = httptest.NewRecorder()
 	responseText := "custom method"
@@ -215,6 +217,19 @@ func TestMuxNotAllowed(t *testing.T) {
 	mux.ServeHTTPC(context.Background(), w, r)
 	assert.Equal(t, responseText, w.Body.String())
 	assert.Equal(t, w.Code, http.StatusTeapot)
+}
+
+func TestMuxNotAllowedSkipOptions(t *testing.T) {
+	handlerFunc := xhandler.HandlerFuncC(func(_ context.Context, _ http.ResponseWriter, _ *http.Request) {})
+
+	mux := New()
+	mux.OPTIONS("/path", handlerFunc)
+
+	// Test not allowed
+	r, _ := http.NewRequest("GET", "/path", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTPC(context.Background(), w, r)
+	assert.Equal(t, w.Code, http.StatusNotFound, "Not allowed response when only OPTIONS is allowed")
 }
 
 func TestMuxNotFound(t *testing.T) {
