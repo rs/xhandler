@@ -20,7 +20,7 @@
 //  }
 //
 //  func Hello(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-//      fmt.Fprintf(w, "hello, %s!\n", xmux.URLParams(ctx).Get("name"))
+//      fmt.Fprintf(w, "hello, %s!\n", xmux.Params(ctx).Get("name"))
 //  }
 //
 //  func main() {
@@ -65,8 +65,8 @@
 //   /files                              no match, but the router would redirect
 //
 // The value of parameters is saved as aParams type saved into the context.
-// Parameters can be retrieved by name using xhandler.URLParams(ctx).Get(name) method:
-//  user := xhandler.URLParams(ctx).Get("user") // defined by :user or *user
+// Parameters can be retrieved by name using xhandler.Params(ctx).Get(name) method:
+//  user := xhandler.Params(ctx).Get("user") // defined by :user or *user
 package xmux
 
 import (
@@ -125,17 +125,19 @@ type Mux struct {
 	PanicHandler func(context.Context, http.ResponseWriter, *http.Request, interface{})
 }
 
-// Params holds URL parameters.
-type Params struct {
-	params []struct {
-		key   string
-		value string
-	}
+// ParamHolder holds URL parameters.
+type ParamHolder struct {
+	params []param
+}
+
+type param struct {
+	key   string
+	value string
 }
 
 // Get returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
-func (ps Params) Get(name string) string {
+func (ps ParamHolder) Get(name string) string {
 	for i := range ps.params {
 		if ps.params[i].key == name {
 			return ps.params[i].value
@@ -146,20 +148,20 @@ func (ps Params) Get(name string) string {
 
 type key int
 
-const paramKey key = iota
+const paramsKey key = iota
 
-var emptyParams = Params{}
+var emptyParams = ParamHolder{}
 
-func newParamContext(ctx context.Context, p Params) context.Context {
-	return context.WithValue(ctx, paramKey, p)
+func newParamContext(ctx context.Context, p ParamHolder) context.Context {
+	return context.WithValue(ctx, paramsKey, p)
 }
 
-// URLParams returns URL parameters stored in context
-func URLParams(ctx context.Context) Params {
+// Params returns URL parameters stored in context
+func Params(ctx context.Context) ParamHolder {
 	if ctx == nil {
 		return emptyParams
 	}
-	if p, ok := ctx.Value(paramKey).(Params); ok {
+	if p, ok := ctx.Value(paramsKey).(ParamHolder); ok {
 		return p
 	}
 	return emptyParams
@@ -246,7 +248,7 @@ func (mux *Mux) recv(ctx context.Context, w http.ResponseWriter, r *http.Request
 // If the path was found, it returns the handle function and the path parameter
 // values. Otherwise the third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
-func (mux *Mux) Lookup(method, path string) (xhandler.HandlerC, Params, bool) {
+func (mux *Mux) Lookup(method, path string) (xhandler.HandlerC, ParamHolder, bool) {
 	if root := mux.trees[method]; root != nil {
 		return root.getValue(path)
 	}

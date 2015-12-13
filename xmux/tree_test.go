@@ -42,7 +42,7 @@ type testRequests []struct {
 	path       string
 	nilHandler bool
 	route      string
-	ps         Params
+	ps         ParamHolder
 }
 
 func checkRequests(t *testing.T, tree *node, requests testRequests) {
@@ -158,7 +158,7 @@ func TestTreeAddAndGet(t *testing.T) {
 	checkMaxParams(t, tree)
 }
 
-func newParams(kv ...string) (ps Params) {
+func newParams(kv ...string) (ps ParamHolder) {
 	for i, l := 0, len(kv); i < l; i += 2 {
 		ps.params = append(ps.params, struct {
 			key   string

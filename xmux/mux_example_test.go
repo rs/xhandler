@@ -24,7 +24,7 @@ func ExampleMux() {
 
 	// Use c.Handler to terminate the chain with your final handler
 	mux.GET("/welcome/:name", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "Welcome %s!", xmux.URLParams(ctx).Get("name"))
+		fmt.Fprintf(w, "Welcome %s!", xmux.Params(ctx).Get("name"))
 	}))
 
 	if err := http.ListenAndServe(":8080", c.Handler(mux)); err != nil {

@@ -39,7 +39,7 @@ type nodeType uint8
 const (
 	static nodeType = iota // default
 	root
-	param
+	parameter
 	catchAll
 )
 
@@ -161,7 +161,7 @@ func (n *node) addRoute(path string, handler xhandler.HandlerC) {
 				c := path[0]
 
 				// slash after param
-				if n.nType == param && c == '/' && len(n.children) == 1 {
+				if n.nType == parameter && c == '/' && len(n.children) == 1 {
 					n = n.children[0]
 					n.priority++
 					continue walk
@@ -247,7 +247,7 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handler xhand
 			}
 
 			child := &node{
-				nType:     param,
+				nType:     parameter,
 				maxParams: numParams,
 			}
 			n.children = []*node{child}
@@ -322,13 +322,13 @@ func (n *node) insertChild(numParams uint8, path, fullPath string, handler xhand
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handler exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string) (handler xhandler.HandlerC, p Params, tsr bool) {
+func (n *node) getValue(path string) (handler xhandler.HandlerC, p ParamHolder, tsr bool) {
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
 			if path[:len(n.path)] == n.path {
 				path = path[len(n.path):]
-				// If this node does not have a wildcard (param or catchAll)
+				// If this node does not have a wildcard (parameter or catchAll)
 				// child,  we can just look up the next child node and continue
 				// to walk down the tree
 				if !n.wildChild {
@@ -351,8 +351,8 @@ walk: // Outer loop for walking the tree
 				// handle wildcard child
 				n = n.children[0]
 				switch n.nType {
-				case param:
-					// find param end (either '/' or path end)
+				case parameter:
+					// find parameter end (either '/' or path end)
 					end := 0
 					for end < len(path) && path[end] != '/' {
 						end++
@@ -361,10 +361,7 @@ walk: // Outer loop for walking the tree
 					// save param value
 					if p.params == nil {
 						// lazy allocation
-						p.params = make([]struct {
-							key   string
-							value string
-						}, 0, n.maxParams)
+						p.params = make([]param, 0, n.maxParams)
 					}
 					i := len(p.params)
 					p.params = p.params[:i+1] // expand slice within preallocated capacity
@@ -405,10 +402,7 @@ walk: // Outer loop for walking the tree
 					// save param value
 					if p.params == nil {
 						// lazy allocation
-						p.params = make([]struct {
-							key   string
-							value string
-						}, 0, n.maxParams)
+						p.params = make([]param, 0, n.maxParams)
 					}
 					i := len(p.params)
 					p.params = p.params[:i+1] // expand slice within preallocated capacity
@@ -469,7 +463,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 		ciPath = append(ciPath, n.path...)
 
 		if len(path) > 0 {
-			// If this node does not have a wildcard (param or catchAll) child,
+			// If this node does not have a wildcard (parameter or catchAll) child,
 			// we can just look up the next child node and continue to walk down
 			// the tree
 			if !n.wildChild {
@@ -493,14 +487,14 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 
 			n = n.children[0]
 			switch n.nType {
-			case param:
-				// find param end (either '/' or path end)
+			case parameter:
+				// find parameter end (either '/' or path end)
 				k := 0
 				for k < len(path) && path[k] != '/' {
 					k++
 				}
 
-				// add param value to case insensitive path
+				// add parameter value to case insensitive path
 				ciPath = append(ciPath, path[:k]...)
 
 				// we need to go deeper!

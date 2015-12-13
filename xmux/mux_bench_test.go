@@ -25,7 +25,7 @@ type route struct {
 var httpHandlerC = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {})
 
 var xhandlerWrite = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, URLParams(ctx).Get("name"))
+	io.WriteString(w, Params(ctx).Get("name"))
 })
 
 func loadXhandler(routes []route) xhandler.HandlerC {

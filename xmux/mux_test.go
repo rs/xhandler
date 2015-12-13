@@ -29,11 +29,8 @@ func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
 func (m *mockResponseWriter) WriteHeader(int) {}
 
 func TestParams(t *testing.T) {
-	ps := Params{
-		params: []struct {
-			key   string
-			value string
-		}{
+	ps := ParamHolder{
+		params: []param{
 			{"param1", "value1"},
 			{"param2", "value2"},
 			{"param3", "value3"},
@@ -46,11 +43,8 @@ func TestParams(t *testing.T) {
 }
 
 func TestParamsDup(t *testing.T) {
-	ps := Params{
-		params: []struct {
-			key   string
-			value string
-		}{
+	ps := ParamHolder{
+		params: []param{
 			{"param", "value1"},
 			{"param", "value2"},
 		},
@@ -58,19 +52,14 @@ func TestParamsDup(t *testing.T) {
 	assert.Equal(t, "value1", ps.Get("param"))
 }
 
-func TestURLParams(t *testing.T) {
-	ps := Params{
-		params: []struct {
-			key   string
-			value string
-		}{
-			{"param1", "value1"},
-		},
+func TestCtxParams(t *testing.T) {
+	ps := ParamHolder{
+		params: []param{{"param1", "value1"}},
 	}
 	ctx := newParamContext(context.TODO(), ps)
-	assert.Equal(t, "value1", URLParams(ctx).Get("param1"))
-	assert.Equal(t, emptyParams, URLParams(context.TODO()))
-	assert.Equal(t, emptyParams, URLParams(nil))
+	assert.Equal(t, "value1", Params(ctx).Get("param1"))
+	assert.Equal(t, emptyParams, Params(context.TODO()))
+	assert.Equal(t, emptyParams, Params(nil))
 }
 
 func TestMux(t *testing.T) {
@@ -79,10 +68,7 @@ func TestMux(t *testing.T) {
 	routed := false
 	mux.Handle("GET", "/user/:name", xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		routed = true
-		assert.Equal(t, Params{params: []struct {
-			key   string
-			value string
-		}{{"name", "gopher"}}}, URLParams(ctx))
+		assert.Equal(t, ParamHolder{params: []param{{"name", "gopher"}}}, Params(ctx))
 	}))
 
 	w := new(mockResponseWriter)
