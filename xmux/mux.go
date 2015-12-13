@@ -71,6 +71,7 @@ package xmux
 
 import (
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/rs/xhandler"
@@ -348,6 +349,7 @@ func (mux *Mux) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.R
 			}
 		}
 		if len(methods) > 0 && methods[0] != "OPTIONS" {
+			sort.Strings(methods)
 			w.Header().Set("Allow", strings.Join(methods, ", "))
 			if mux.MethodNotAllowed != nil {
 				mux.MethodNotAllowed.ServeHTTPC(ctx, w, r)
