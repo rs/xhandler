@@ -10,7 +10,7 @@ import (
 // management.
 type Chain []func(next HandlerC) HandlerC
 
-// UseC appends a context-aware handler to the middeware chain.
+// UseC appends a context-aware handler to the middleware chain.
 func (c *Chain) UseC(f func(next HandlerC) HandlerC) {
 	*c = append(*c, f)
 }
