@@ -75,7 +75,7 @@ func main() {
 
 ### Using xmux
 
-Xhandler comes with an optional context aware [muxer](https://github.com/rs/xhandler/tree/master/xmux) forked from [httprouter](https://github.com/julienschmidt/httprouter):
+Xhandler comes with an optional context aware [muxer](https://github.com/rs/xmux) forked from [httprouter](https://github.com/julienschmidt/httprouter):
 
 ```go
 package main
@@ -87,7 +87,7 @@ import (
 	"time"
 
 	"github.com/rs/xhandler"
-	"github.com/rs/xhandler/xmux"
+	"github.com/rs/xmux"
 	"golang.org/x/net/context"
 )
 
@@ -113,7 +113,7 @@ func main() {
 }
 ```
 
-See [xmux](https://github.com/rs/xhandler/tree/master/xmux) for more examples.
+See [xmux](https://github.com/rs/xmux) for more examples.
 
 ## Context Aware Middleware
 
@@ -123,6 +123,7 @@ Feel free to put up a PR linking your middleware if you have built one:
 
 | Middleware | Author | Description |
 | ---------- | ------ | ----------- |
+| [xmux](https://github.com/rs/xmux) | [Olivier Poitrey](https://github.com/rs) | HTTP request muxer |
 | [xlog](https://github.com/rs/xlog) | [Olivier Poitrey](https://github.com/rs) | HTTP handler logger |
 | [xstats](https://github.com/rs/xstats) | [Olivier Poitrey](https://github.com/rs) | A generic client for service instrumentation |
 | [xaccess](https://github.com/rs/xaccess) | [Olivier Poitrey](https://github.com/rs) | HTTP handler access logger with [xlog](https://github.com/rs/xlog) and [xstats](https://github.com/rs/xstats) |
