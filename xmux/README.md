@@ -54,8 +54,8 @@ func Hello(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := xmux.New()
-	mux.GET("/", Index)
-	mux.GET("/hello/:name", Hello)
+	mux.GET("/", xhandler.HandlerFuncC(Index))
+	mux.GET("/hello/:name", xhandler.HandlerFuncC(Hello))
 
 	log.Fatal(http.ListenAndServe(":8080", xhandler.New(context.Background(), mux)))
 }
