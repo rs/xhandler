@@ -40,6 +40,34 @@ func (c Chain) Handler(xh HandlerC) http.Handler {
 	return c.HandlerCtx(ctx, xh)
 }
 
+// HandlerFC is an helper to provide a function (HandlerFuncC) to Handler().
+//
+// HandlerFC is equivalent to:
+//  c.Handler(xhandler.HandlerFuncC(xhc))
+func (c Chain) HandlerFC(xhf HandlerFuncC) http.Handler {
+	ctx := context.Background()
+	return c.HandlerCtx(ctx, HandlerFuncC(xhf))
+}
+
+// HandlerH is an helper to provide a standard http handler (http.HandlerFunc)
+// to Handler(). Your final handler won't have access the context though.
+func (c Chain) HandlerH(h http.Handler) http.Handler {
+	ctx := context.Background()
+	return c.HandlerCtx(ctx, HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	}))
+}
+
+// HandlerF is an helper to provide a standard http handler function
+// (http.HandlerFunc) to Handler(). Your final handler won't have access
+// the context though.
+func (c Chain) HandlerF(hf http.HandlerFunc) http.Handler {
+	ctx := context.Background()
+	return c.HandlerCtx(ctx, HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		hf(w, r)
+	}))
+}
+
 // HandlerCtx wraps the provided final handler with all the middleware appended to
 // the chain and return a new standard http.Handler instance.
 func (c Chain) HandlerCtx(ctx context.Context, xh HandlerC) http.Handler {
@@ -53,4 +81,13 @@ func (c Chain) HandlerC(xh HandlerC) HandlerC {
 		xh = c[i](xh)
 	}
 	return xh
+}
+
+// HandlerCF wraps the provided final handler func with all the middleware appended to
+// the chain and returns a HandlerC instance.
+//
+// HandlerCF is equivalent to:
+//  c.HandlerC(xhandler.HandlerFuncC(xhc))
+func (c Chain) HandlerCF(xhc HandlerFuncC) HandlerC {
+	return c.HandlerC(HandlerFuncC(xhc))
 }
