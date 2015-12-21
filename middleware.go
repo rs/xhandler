@@ -19,8 +19,11 @@ func CloseHandler(next HandlerC) HandlerC {
 
 			notify := wcn.CloseNotify()
 			go func() {
-				<-notify
-				cancel()
+				select {
+				case <-notify:
+					cancel()
+				case <-ctx.Done():
+				}
 			}()
 		}
 
