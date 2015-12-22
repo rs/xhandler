@@ -3,7 +3,7 @@ package xhandler
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"golang.org/x/net/context/context"
 )
 
 // Chain is an helper to chain middleware handlers together for an easier
