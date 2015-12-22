@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
+	"golang.org/x/net/context/context"
 )
 
 func TestTimeoutHandler(t *testing.T) {
