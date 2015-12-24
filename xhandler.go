@@ -24,7 +24,7 @@ type HandlerC interface {
 
 // HandlerFuncC type is an adapter to allow the use of ordinary functions
 // as a xhandler.Handler. If f is a function with the appropriate signature,
-// xhandler.HandlerFunc(f) is a xhandler.Handler object that calls f.
+// xhandler.HandlerFuncC(f) is a xhandler.Handler object that calls f.
 type HandlerFuncC func(context.Context, http.ResponseWriter, *http.Request)
 
 // ServeHTTPC calls f(ctx, w, r).
