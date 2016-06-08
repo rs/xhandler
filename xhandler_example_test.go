@@ -1,12 +1,12 @@
 package xhandler_test
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/rs/xhandler"
-	"golang.org/x/net/context"
 )
 
 type key int
@@ -23,16 +23,16 @@ func fromContext(ctx context.Context) (string, bool) {
 }
 
 func ExampleHandle() {
-	var xh xhandler.HandlerC
-	xh = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		value, _ := fromContext(ctx)
+	var xh http.Handler
+	xh = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		value, _ := fromContext(r.Context())
 		w.Write([]byte("Hello " + value))
 	})
 
-	xh = (func(next xhandler.HandlerC) xhandler.HandlerC {
-		return xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = newContext(ctx, "World")
-			next.ServeHTTPC(ctx, w, r)
+	xh = (func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := newContext(r.Context(), "World")
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})(xh)
 
@@ -46,10 +46,10 @@ func ExampleHandle() {
 }
 
 func ExampleHandleTimeout() {
-	var xh xhandler.HandlerC
-	xh = xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var xh http.Handler
+	xh = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello World"))
-		if _, ok := ctx.Deadline(); ok {
+		if _, ok := r.Context().Deadline(); ok {
 			w.Write([]byte(" with deadline"))
 		}
 	})

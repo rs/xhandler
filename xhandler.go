@@ -12,31 +12,17 @@
 package xhandler // import "github.com/rs/xhandler"
 
 import (
+	"context"
 	"net/http"
-
-	"golang.org/x/net/context"
 )
-
-// HandlerC is a net/context aware http.Handler
-type HandlerC interface {
-	ServeHTTPC(context.Context, http.ResponseWriter, *http.Request)
-}
-
-// HandlerFuncC type is an adapter to allow the use of ordinary functions
-// as a xhandler.Handler. If f is a function with the appropriate signature,
-// xhandler.HandlerFuncC(f) is a xhandler.Handler object that calls f.
-type HandlerFuncC func(context.Context, http.ResponseWriter, *http.Request)
-
-// ServeHTTPC calls f(ctx, w, r).
-func (f HandlerFuncC) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
-}
 
 // New creates a conventional http.Handler injecting the provided root
 // context to sub handlers. This handler is used as a bridge between conventional
 // http.Handler and context aware handlers.
-func New(ctx context.Context, h HandlerC) http.Handler {
+func New(ctx context.Context, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTPC(ctx, w, r)
+		//ctx = context.WithContext(ctx)
+		r = r.WithContext(ctx) // TODO: doesnt smell good.. might loose orig ctx?!
+		h.ServeHTTP(w, r)
 	})
 }

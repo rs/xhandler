@@ -1,6 +1,7 @@
 package xhandler
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestTimeoutHandler(t *testing.T) {
@@ -65,18 +65,18 @@ func TestCloseHandlerRequestEnds(t *testing.T) {
 }
 
 func TestIf(t *testing.T) {
-	trueHandler := HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	trueHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/true", r.URL.Path)
 	})
-	falseHandler := HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	falseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.NotEqual(t, "/true", r.URL.Path)
 	})
 	ctx := context.WithValue(context.Background(), contextKey, "value")
 	xh := If(
-		func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+		func(w http.ResponseWriter, r *http.Request) bool {
 			return r.URL.Path == "/true"
 		},
-		func(next HandlerC) HandlerC {
+		func(nex http.Handler) http.Handler {
 			return trueHandler
 		},
 	)(falseHandler)
