@@ -1,6 +1,7 @@
 package xhandler
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 type handler struct{}
@@ -26,7 +26,8 @@ func fromContext(ctx context.Context) (string, bool) {
 	return value, ok
 }
 
-func (h handler) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// Leave other go routines a chance to run
 	time.Sleep(time.Nanosecond)
 	value, _ := fromContext(ctx)
@@ -40,22 +41,25 @@ func (h handler) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.
 }
 
 func TestHandle(t *testing.T) {
-	ctx := context.WithValue(context.Background(), contextKey, "value")
-	h := New(ctx, &handler{})
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx := context.WithValue(context.Background(), contextKey, "value")
+	r = r.WithContext(ctx)
+	h := &handler{}
+
 	h.ServeHTTP(w, r)
 	assert.Equal(t, "value", w.Body.String())
 }
 
 func TestHandlerFunc(t *testing.T) {
 	ok := false
-	xh := HandlerFuncC(func(context.Context, http.ResponseWriter, *http.Request) {
+	h := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		ok = true
 	})
-	xh.ServeHTTPC(nil, nil, nil)
+	h.ServeHTTP(nil, nil)
 	assert.True(t, ok)
 }

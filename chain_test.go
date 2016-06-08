@@ -1,50 +1,53 @@
 package xhandler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestAppendHandlerC(t *testing.T) {
 	init := 0
-	h1 := func(next HandlerC) HandlerC {
+	h1 := func(next http.Handler) http.Handler {
 		init++
-		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = context.WithValue(ctx, "test", 1)
-			next.ServeHTTPC(ctx, w, r)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "test", 1)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	h2 := func(next HandlerC) HandlerC {
-		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = context.WithValue(ctx, "test", 2)
-			next.ServeHTTPC(ctx, w, r)
+	h2 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "test", 2)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 	c := Chain{}
-	c.UseC(h1)
-	c.UseC(h2)
+	c.Use(h1)
+	c.Use(h2)
 	assert.Len(t, c, 2)
 
-	h := c.Handler(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Test ordering
-		assert.Equal(t, 2, ctx.Value("test"), "second handler should overwrite first handler's context value")
+		assert.Equal(t, 2, r.Context().Value("test"), "second handler should overwrite first handler's context value")
 	}))
 
-	h.ServeHTTP(nil, nil)
-	h.ServeHTTP(nil, nil)
+	req := httptest.NewRequest("", "/test", nil)
+
+	h.ServeHTTP(nil, req)
+	h.ServeHTTP(nil, req)
+
 	assert.Equal(t, 1, init, "handler init called once")
 }
 
 func TestAppendHandler(t *testing.T) {
 	init := 0
-	h1 := func(next HandlerC) HandlerC {
-		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			ctx = context.WithValue(ctx, "test", 1)
-			next.ServeHTTPC(ctx, w, r)
+	h1 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "test", 1)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 	h2 := func(next http.Handler) http.Handler {
@@ -52,61 +55,66 @@ func TestAppendHandler(t *testing.T) {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Change r and w values
 			w = httptest.NewRecorder()
-			r = &http.Request{}
+			// TODO: since the context lives inside the context now, this wouldn't be fair (meaning: work)
+			//r = &http.Request{}
 			next.ServeHTTP(w, r)
 		})
 	}
 	c := Chain{}
-	c.UseC(h1)
+	c.Use(h1)
 	c.Use(h2)
 	assert.Len(t, c, 2)
 
-	h := c.Handler(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h := c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Test ordering
-		assert.Equal(t, 1, ctx.Value("test"),
+		assert.Equal(t, 1, r.Context().Value("test"),
 			"the first handler value should be pass through the second (non-aware) one")
 		// Test r and w overwrite
 		assert.NotNil(t, w)
 		assert.NotNil(t, r)
 	}))
 
-	h.ServeHTTP(nil, nil)
-	h.ServeHTTP(nil, nil)
+	req := httptest.NewRequest("", "/test", nil)
+
+	h.ServeHTTP(nil, req)
+	h.ServeHTTP(nil, req)
+
 	// There's no safe way to not initialize non ctx aware handlers on each request :/
 	//assert.Equal(t, 1, init, "handler init called once")
 }
 
 func TestChainHandlerC(t *testing.T) {
 	handlerCalls := 0
-	h1 := func(next HandlerC) HandlerC {
-		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-			handlerCalls++
-			ctx = context.WithValue(ctx, "test", 1)
-			next.ServeHTTPC(ctx, w, r)
+	h1 := func(next http.Handler) http.Handler {
+		handlerCalls++
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), "test", 1)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-	h2 := func(next HandlerC) HandlerC {
-		return HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	h2 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handlerCalls++
-			ctx = context.WithValue(ctx, "test", 2)
-			next.ServeHTTPC(ctx, w, r)
+			ctx := context.WithValue(r.Context(), "test", 2)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
 	c := Chain{}
-	c.UseC(h1)
-	c.UseC(h2)
-	h := c.HandlerC(HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	c.Use(h1)
+	c.Use(h2)
+	h := c.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handlerCalls++
 
-		assert.Equal(t, 2, ctx.Value("test"),
+		assert.Equal(t, 2, r.Context().Value("test"),
 			"second handler should overwrite first handler's context value")
-		assert.Equal(t, 1, ctx.Value("mainCtx"),
+		assert.Equal(t, 1, r.Context().Value("mainCtx"),
 			"the mainCtx value should be pass through")
 	}))
 
+	req := httptest.NewRequest("", "/test", nil)
 	mainCtx := context.WithValue(context.Background(), "mainCtx", 1)
-	h.ServeHTTPC(mainCtx, nil, nil)
+	h.ServeHTTP(nil, req.WithContext(mainCtx))
 
 	assert.Equal(t, 3, handlerCalls, "all handler called once")
 }

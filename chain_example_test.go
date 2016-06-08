@@ -6,31 +6,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/cors"
 	"github.com/rs/xhandler"
-	"golang.org/x/net/context"
 )
 
 func ExampleChain() {
 	c := xhandler.Chain{}
 	// Append a context-aware middleware handler
-	c.UseC(xhandler.CloseHandler)
+	c.Use(xhandler.CloseHandler)
 
 	// Mix it with a non-context-aware middleware handler
-	c.Use(cors.Default().Handler)
+	// TODO: adapt new api for cors
+	//c.Use(cors.Default().Handler)
 
 	// Another context-aware middleware handler
-	c.UseC(xhandler.TimeoutHandler(2 * time.Second))
+	c.Use(xhandler.TimeoutHandler(2 * time.Second))
 
 	mux := http.NewServeMux()
 
 	// Use c.Handler to terminate the chain with your final handler
-	mux.Handle("/", c.Handler(xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	mux.Handle("/", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Welcome to the home page!")
 	})))
 
 	// You can reuse the same chain for other handlers
-	mux.Handle("/api", c.Handler(xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	mux.Handle("/api", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Welcome to the API!")
 	})))
 }
@@ -39,14 +38,14 @@ func ExampleIf() {
 	c := xhandler.Chain{}
 
 	// Add timeout handler only if the path match a prefix
-	c.UseC(xhandler.If(
-		func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
+	c.Use(xhandler.If(
+		func(w http.ResponseWriter, r *http.Request) bool {
 			return strings.HasPrefix(r.URL.Path, "/with-timeout/")
 		},
 		xhandler.TimeoutHandler(2*time.Second),
 	))
 
-	http.Handle("/", c.Handler(xhandler.HandlerFuncC(func(ctx context.Context, w http.ResponseWriter, req *http.Request) {
+	http.Handle("/", c.Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "Welcome to the home page!")
 	})))
 }
