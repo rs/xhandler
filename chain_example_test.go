@@ -71,7 +71,7 @@ func ExampleAddChain() {
 func ExampleIf() {
 	c := xhandler.Chain{}
 
-	// Add timeout handler only if the path match a prefix
+	// Add a timeout handler only if the URL path matches a prefix
 	c.UseC(xhandler.If(
 		func(ctx context.Context, w http.ResponseWriter, r *http.Request) bool {
 			return strings.HasPrefix(r.URL.Path, "/with-timeout/")
