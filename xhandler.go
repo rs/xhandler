@@ -37,6 +37,6 @@ func (f HandlerFuncC) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *
 // http.Handler and context aware handlers.
 func New(ctx context.Context, h HandlerC) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTPC(ctx, w, r)
+		h.ServeHTTPC(ctx, w, r.WithContext(ctx))
 	})
 }

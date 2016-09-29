@@ -56,6 +56,10 @@ func TestHandlerFunc(t *testing.T) {
 	xh := HandlerFuncC(func(context.Context, http.ResponseWriter, *http.Request) {
 		ok = true
 	})
-	xh.ServeHTTPC(nil, nil, nil)
+	r, err := http.NewRequest("GET", "http://example.com/foo", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	xh.ServeHTTPC(context.Background(), nil, r)
 	assert.True(t, ok)
 }
