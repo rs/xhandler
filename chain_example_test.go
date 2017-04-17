@@ -8,7 +8,7 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/rs/xhandler"
-	"golang.org/x/net/context"
+	"golang.org/x/net/context/context"
 )
 
 func ExampleChain() {
