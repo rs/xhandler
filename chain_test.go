@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"context"
+
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 func TestAppendHandlerC(t *testing.T) {
