@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testRequest, _ = http.NewRequest("GET", "/", nil)
+
 func TestAppendHandlerC(t *testing.T) {
 	init := 0
 	h1 := func(next HandlerC) HandlerC {
@@ -35,8 +37,8 @@ func TestAppendHandlerC(t *testing.T) {
 		assert.Equal(t, 2, ctx.Value("test"), "second handler should overwrite first handler's context value")
 	}))
 
-	h.ServeHTTP(nil, nil)
-	h.ServeHTTP(nil, nil)
+	h.ServeHTTP(nil, testRequest)
+	h.ServeHTTP(nil, testRequest)
 	assert.Equal(t, 1, init, "handler init called once")
 }
 
@@ -71,8 +73,8 @@ func TestAppendHandler(t *testing.T) {
 		assert.NotNil(t, r)
 	}))
 
-	h.ServeHTTP(nil, nil)
-	h.ServeHTTP(nil, nil)
+	h.ServeHTTP(nil, testRequest)
+	h.ServeHTTP(nil, testRequest)
 	// There's no safe way to not initialize non ctx aware handlers on each request :/
 	//assert.Equal(t, 1, init, "handler init called once")
 }
@@ -107,7 +109,7 @@ func TestChainHandlerC(t *testing.T) {
 	}))
 
 	mainCtx := context.WithValue(context.Background(), "mainCtx", 1)
-	h.ServeHTTPC(mainCtx, nil, nil)
+	h.ServeHTTPC(mainCtx, nil, testRequest)
 
 	assert.Equal(t, 3, handlerCalls, "all handler called once")
 }
@@ -150,7 +152,7 @@ func TestAdd(t *testing.T) {
 	}))
 
 	mainCtx := context.WithValue(context.Background(), "mainCtx", 1)
-	h.ServeHTTPC(mainCtx, nil, nil)
+	h.ServeHTTPC(mainCtx, nil, testRequest)
 	assert.Equal(t, 4, handlerCalls, "all handler called once")
 }
 
@@ -202,9 +204,9 @@ func TestWith(t *testing.T) {
 	}))
 
 	mainCtx := context.WithValue(context.Background(), "mainCtx", 1)
-	h.ServeHTTPC(mainCtx, nil, nil)
+	h.ServeHTTPC(mainCtx, nil, testRequest)
 	assert.Equal(t, 2, handlerCalls, "all handlers called once")
 	handlerCalls = 0
-	i.ServeHTTPC(mainCtx, nil, nil)
+	i.ServeHTTPC(mainCtx, nil, testRequest)
 	assert.Equal(t, 4, handlerCalls, "all handler called once")
 }
